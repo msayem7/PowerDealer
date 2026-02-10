@@ -1,0 +1,66 @@
+SMALL / LIGHTWEIGHT SOFTWARE GUIDELINE
+
+PURPOSE
+
+This guideline is for MVPs, admin panels, internal tools, and
+prototypes. Focus is speed and simplicity.
+
+TECH STACK
+
+Backend: Django + DRF Frontend: Vue 3 + Pinia Auth: Simple JWT or
+session Testing: Minimal
+
+BACKEND STRUCTURE
+
+app/ models.py serializers.py views.py urls.py
+
+Keep things flat and simple.
+
+MODELS
+
+-   Keep fields minimal.
+-   Avoid premature abstractions.
+-   Only add relations when needed.
+
+SERIALIZERS
+
+-   Use ModelSerializer.
+-   Keep validation simple.
+
+VIEWS
+
+-   Use APIView.
+-   Keep logic readable.
+-   No service layer unless required.
+
+ERROR HANDLING
+
+Just return errors and display them simply in UI.
+
+FRONTEND STRUCTURE
+
+src/ api/ stores/ views/ components/
+
+Keep folder layout flat.
+
+API LAYER
+
+Use one axios instance. Do not call axios directly in components.
+
+PINIA STORES
+
+Stores keep: - list data - loading state
+
+Keep logic small and readable.
+
+AUTH
+
+Use simple JWT. Skip refresh logic unless required.
+
+TESTING
+
+Test only critical APIs and main screens.
+
+GOAL
+
+This guideline ensures fast delivery without over-engineering.

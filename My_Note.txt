@@ -1,0 +1,11 @@
+### To Run Backend
+
+cd powerdealer
+pip install -r ../requirements.txt
+python manage.py migrate
+python manage.py runserver
+
+#### To Run Frontend
+cd powerdealer_f
+npm install
+npm run dev

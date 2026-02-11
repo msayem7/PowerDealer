@@ -9,6 +9,10 @@ export const authApi = {
     return api.post('/auth/login/', { username, password })
   },
 
+  getMe() {
+    return api.get('/auth/me/')
+  },
+
   getBusiness() {
     return api.get('/business/')
   },

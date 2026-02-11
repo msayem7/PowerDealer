@@ -1,66 +1,256 @@
-SMALL / LIGHTWEIGHT SOFTWARE GUIDELINE
+SMALL / LIGHTWEIGHT SOFTWARE GUIDELINE (With Error Handling & Logging)
 
 PURPOSE
 
 This guideline is for MVPs, admin panels, internal tools, and
-prototypes. Focus is speed and simplicity.
+prototypes. The focus is SPEED + CLARITY, while still keeping
+user-friendly error handling and production-safe logging.
+
+Do not over-engineer, but do not ignore reliability.
 
 TECH STACK
 
-Backend: Django + DRF Frontend: Vue 3 + Pinia Auth: Simple JWT or
-session Testing: Minimal
+Backend: Django + Django REST Framework
+Frontend: Vue 3 + Pinia
+Auth: Simple JWT or Session
+Testing: Minimal but meaningful
 
-BACKEND STRUCTURE
+  -------------------
+  BACKEND GUIDELINE
+  -------------------
+
+PROJECT STRUCTURE
 
 app/ models.py serializers.py views.py urls.py
 
-Keep things flat and simple.
+Keep structure flat so developers can move fast.
 
-MODELS
+  --------
+  MODELS
+  --------
 
 -   Keep fields minimal.
 -   Avoid premature abstractions.
--   Only add relations when needed.
+-   Only add relations when business requires them.
+-   Add created_at / updated_at when data matters.
 
-SERIALIZERS
+Reason: Small apps grow. These fields help later debugging.
+
+  -------------
+  SERIALIZERS
+  -------------
 
 -   Use ModelSerializer.
--   Keep validation simple.
+-   Validate only what is necessary.
+-   Return clear error messages.
 
-VIEWS
+Example: If email already exists, return: “This email is already
+registered.”
+
+Reason: Errors should be readable by humans, not developers only.
+
+  -------
+  VIEWS
+  -------
 
 -   Use APIView.
 -   Keep logic readable.
--   No service layer unless required.
+-   Avoid large functions.
+-   Catch predictable exceptions.
 
-ERROR HANDLING
+Example behavior: - Validation error → 400 - Not found → 404 -
+Permission error → 403 - Server error → 500
 
-Just return errors and display them simply in UI.
+Reason: Correct HTTP codes help frontend show correct messages.
 
-FRONTEND STRUCTURE
+  --------------------------
+  ERROR HANDLING (Backend)
+  --------------------------
+
+Always return a consistent format:
+
+{ success: false, message: “Something went wrong”, errors: {} }
+
+Rules:
+
+-   Do NOT expose stack traces to users.
+-   Log technical details internally.
+-   Send friendly messages to frontend.
+
+Examples:
+
+Bad: “KeyError at line 55”
+
+Good: “We couldn’t process your request right now.”
+
+Use DRF custom exception handler if possible.
+
+Reason: Users need clarity, developers need logs.
+
+  -------------------
+  LOGGING (Backend)
+  -------------------
+
+Enable logging in production:
+
+-   Log errors
+-   Log important actions
+-   Log unexpected behavior
+
+Log levels:
+
+INFO → normal operations
+WARNING → suspicious but working
+ERROR → failed operation
+CRITICAL→ system crash
+
+Log examples:
+
+-   User login failed
+-   Payment creation failed
+-   API timeout
+
+Never log:
+
+-   Passwords
+-   Tokens
+-   Card numbers
+
+Reason: Logs are for developers, not attackers.
+
+  --------------------
+  FRONTEND GUIDELINE
+  --------------------
+
+PROJECT STRUCTURE
 
 src/ api/ stores/ views/ components/
 
-Keep folder layout flat.
+Keep layout simple and predictable.
 
-API LAYER
+  -----------
+  API LAYER
+  -----------
 
-Use one axios instance. Do not call axios directly in components.
+Use one axios instance.
 
-PINIA STORES
+Handle:
 
-Stores keep: - list data - loading state
+-   Network errors
+-   401 unauthorized
+-   500 server errors
 
-Keep logic small and readable.
+Example behavior:
 
-AUTH
+-   Network error → “Server not reachable”
+-   401 → “Please login again”
+-   500 → “Something went wrong”
 
-Use simple JWT. Skip refresh logic unless required.
+Reason: Frontend must translate technical errors into human language.
 
-TESTING
+  --------------
+  PINIA STORES
+  --------------
 
-Test only critical APIs and main screens.
+Stores manage:
 
-GOAL
+-   data
+-   loading
+-   error
 
-This guideline ensures fast delivery without over-engineering.
+Example state:
+
+{ list: [], loading: false, error: null }
+
+Rules:
+
+-   Always reset error before request.
+-   Catch API errors.
+-   Store friendly message, not raw error.
+
+Reason: UI should never show raw backend messages.
+
+  ------------------------
+  USER FRIENDLY MESSAGES
+  ------------------------
+
+Always speak like a human:
+
+Bad: “Invalid payload”
+
+Good: “Some information is missing. Please check and try again.”
+
+Bad: “Unauthorized”
+
+Good: “Your session expired. Please login again.”
+
+Reason: Users are not developers.
+
+  ---------------------------------
+  GLOBAL ERROR HANDLER (Frontend)
+  ---------------------------------
+
+Create one handler to:
+
+-   Catch axios errors
+-   Map status to messages
+-   Redirect on auth failure
+
+Example mapping:
+
+400 → “Please check your input.”
+401 → “Login required.”
+403 → “You don’t have permission.”
+404 → “Not found.”
+500 → “Server problem. Try later.”
+
+Reason: One place to control all errors.
+
+  --------------------
+  LOGGING (Frontend)
+  --------------------
+
+Log:
+
+-   API failures
+-   UI crashes
+-   Unexpected behavior
+
+In development: - console.error
+
+In production: - send logs to server endpoint
+
+Never log: - passwords - tokens - private user data
+
+Reason: Frontend logs help debugging real users.
+
+  ---------
+  TESTING
+  ---------
+
+Test at least:
+
+-   Critical APIs
+-   Main user flows
+-   Error scenarios
+
+Example:
+
+-   Login failure
+-   Network down
+-   Invalid input
+
+Reason: Most bugs appear in error cases.
+
+  ------
+  GOAL
+  ------
+
+This guideline ensures:
+
+-   Fast development
+-   Friendly user experience
+-   Safe production logging
+-   No over-engineering
+
+Perfect for MVPs and small systems that still behave professionally.

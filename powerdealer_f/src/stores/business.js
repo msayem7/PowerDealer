@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { authApi } from '../api/auth'
+import { getErrorMessage } from '../api/client'
 
 export const useBusinessStore = defineStore('business', () => {
   const business = ref(null)
@@ -12,10 +13,10 @@ export const useBusinessStore = defineStore('business', () => {
     error.value = null
     try {
       const response = await authApi.getBusiness()
-      business.value = response.data
+      business.value = response.data.data
       return response.data
     } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to fetch business'
+      error.value = getErrorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -27,10 +28,10 @@ export const useBusinessStore = defineStore('business', () => {
     error.value = null
     try {
       const response = await authApi.updateBusiness(data)
-      business.value = response.data
+      business.value = response.data.data
       return response.data
     } catch (err) {
-      error.value = err.response?.data || 'Failed to update business'
+      error.value = getErrorMessage(err)
       throw err
     } finally {
       loading.value = false

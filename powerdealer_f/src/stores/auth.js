@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '../api/auth'
+import { getErrorMessage } from '../api/client'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
@@ -15,17 +16,17 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       const response = await authApi.signup(signupData)
-      const { user: userData, business: businessData, tokens } = response.data
+      const { data } = response.data
 
-      localStorage.setItem('access_token', tokens.access)
-      localStorage.setItem('refresh_token', tokens.refresh)
+      localStorage.setItem('access_token', data.tokens.access)
+      localStorage.setItem('refresh_token', data.tokens.refresh)
 
-      user.value = userData
-      business.value = businessData
+      user.value = data.user
+      business.value = data.business
 
       return response.data
     } catch (err) {
-      error.value = err.response?.data?.detail || 'Signup failed'
+      error.value = getErrorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -37,17 +38,17 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       const response = await authApi.login(username, password)
-      const { user: userData, business: businessData, tokens } = response.data
+      const { data } = response.data
 
-      localStorage.setItem('access_token', tokens.access)
-      localStorage.setItem('refresh_token', tokens.refresh)
+      localStorage.setItem('access_token', data.tokens.access)
+      localStorage.setItem('refresh_token', data.tokens.refresh)
 
-      user.value = userData
-      business.value = businessData
+      user.value = data.user
+      business.value = data.business
 
       return response.data
     } catch (err) {
-      error.value = err.response?.data?.error || 'Login failed'
+      error.value = getErrorMessage(err)
       throw err
     } finally {
       loading.value = false
@@ -61,13 +62,31 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('refresh_token')
   }
 
-  const restoreSession = () => {
+  const restoreSession = async () => {
     const token = localStorage.getItem('access_token')
-    if (token) {
-      // Optional: Validate token with backend
-      return true
+    if (!token) {
+      return false
     }
-    return false
+    
+    try {
+      loading.value = true
+      const response = await authApi.getMe()
+      const { data } = response.data
+      
+      user.value = data.user
+      business.value = data.business
+      
+      return true
+    } catch (err) {
+      // Token invalid or expired - clear storage
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      user.value = null
+      business.value = null
+      return false
+    } finally {
+      loading.value = false
+    }
   }
 
   return {

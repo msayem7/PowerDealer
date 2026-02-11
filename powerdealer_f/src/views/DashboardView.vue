@@ -102,7 +102,13 @@ onMounted(() => {
 
 const loadBusiness = async () => {
   try {
-    await businessStore.fetchBusiness()
+    // Use business from auth restore if available, otherwise fetch
+    if (authStore.business && !businessStore.business) {
+      businessStore.setBusiness(authStore.business)
+    } else if (!businessStore.business) {
+      await businessStore.fetchBusiness()
+    }
+    
     if (businessStore.business) {
       editForm.value = {
         name: businessStore.business.name,

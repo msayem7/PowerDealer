@@ -35,7 +35,7 @@ SSH into your VPS and run:
 
 ```bash
 # Download and run setup script
-curl -fsSL https://raw.githubusercontent.com/msayem7/PowerDealer/main/scripts/setup-vps.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/msayem7/PowerDealer/Deploy_Using_Docker/scripts/setup-vps.sh | sudo bash
 ```
 
 Or manually:

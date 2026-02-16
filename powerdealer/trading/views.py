@@ -5,11 +5,34 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.db import connection
 
 from .models import Business
 from .serializers import SignupSerializer, LoginSerializer, BusinessSerializer
 
 logger = logging.getLogger(__name__)
+
+
+class HealthCheckView(APIView):
+    """Health check endpoint for container orchestration"""
+    def get(self, request):
+        # Check database connection
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+            db_status = "healthy"
+        except Exception as e:
+            db_status = f"unhealthy: {str(e)}"
+            logger.error(f"Health check failed: {e}")
+            return Response({
+                "status": "unhealthy",
+                "database": db_status
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        return Response({
+            "status": "healthy",
+            "database": db_status
+        })
 
 
 class SignupView(APIView):

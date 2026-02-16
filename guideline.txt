@@ -254,3 +254,4 @@ This guideline ensures:
 -   No over-engineering
 
 Perfect for MVPs and small systems that still behave professionally.
+

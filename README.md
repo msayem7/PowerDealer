@@ -13,7 +13,7 @@ A lightweight, modern web application for managing multi-tenant business operati
 - **Backend:** Django 5.2 + Django REST Framework
 - **Frontend:** Vue 3 + Pinia (state management) + Axios
 - **Authentication:** JWT (JSON Web Tokens)
-- **Database:** SQLite (development)
+- **Database:** SQLite (development) PostgreSQL (Production)
 
 ## Project Structure
 

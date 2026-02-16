@@ -1,0 +1,66 @@
+# Docker Compose for Local Development
+# Usage: docker-compose up -d
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: powerdealer_dev_db
+    environment:
+      POSTGRES_DB: powerdealer_dev
+      POSTGRES_USER: powerdealer
+      POSTGRES_PASSWORD: devpassword123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - powerdealer_dev
+
+  # Django Backend
+  backend:
+    build:
+      context: ./powerdealer
+      dockerfile: Dockerfile
+    container_name: powerdealer_dev_backend
+    depends_on:
+      - db
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=dev-secret-key-not-for-production
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+      - DATABASE_URL=postgres://powerdealer:devpassword123@db:5432/powerdealer_dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./powerdealer:/app
+    networks:
+      - powerdealer_dev
+    command: python manage.py runserver 0.0.0.0:8000
+
+  # Vue.js Frontend (dev mode)
+  frontend:
+    build:
+      context: ./powerdealer_f
+      dockerfile: Dockerfile.dev
+    container_name: powerdealer_dev_frontend
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./powerdealer_f:/app
+      - /app/node_modules
+    networks:
+      - powerdealer_dev
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  powerdealer_dev:
+    driver: bridge

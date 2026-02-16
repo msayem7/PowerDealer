@@ -43,3 +43,18 @@ db.sqlite3-journal
 # Node/Vite
 frontend/node_modules/
 frontend/dist/
+powerdealer_f/node_modules/
+powerdealer_f/dist/
+node_modules/
+
+# Production
+staticfiles/
+media/
+*.log
+logs/
+
+# Backups
+backups/
+
+# SSL certificates (generated on VPS)
+certbot/

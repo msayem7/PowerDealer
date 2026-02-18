@@ -72,9 +72,11 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refresh_token')
         if (refreshToken) {
-          const response = await axios.post('http://localhost:8000/api/token/refresh/', {
-            refresh: refreshToken,
-          })
+          // Use relative URL for token refresh (works in both dev and production)
+          const response = await axios.post(
+            `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/token/refresh/`,
+            { refresh: refreshToken }
+          )
           
           localStorage.setItem('access_token', response.data.access)
           api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`

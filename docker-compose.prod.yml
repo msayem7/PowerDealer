@@ -1,8 +1,6 @@
 # Docker Compose for Production Deployment
 # Usage: docker-compose -f docker-compose.prod.yml up -d
 
-version: '3.8'
-
 services:
   # PostgreSQL Database
   db:
@@ -25,7 +23,8 @@ services:
 
   # Django Backend
   backend:
-    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_USERNAME}/powerdealer-backend:${IMAGE_TAG:-latest}
+    build: ./powerdealer
+    image: powerdealer-backend:latest
     container_name: powerdealer_backend
     restart: unless-stopped
     depends_on:
@@ -52,7 +51,11 @@ services:
 
   # Vue.js Frontend
   frontend:
-    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_USERNAME}/powerdealer-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: ./powerdealer_f
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+    image: powerdealer-frontend:latest
     container_name: powerdealer_frontend
     restart: unless-stopped
     networks:

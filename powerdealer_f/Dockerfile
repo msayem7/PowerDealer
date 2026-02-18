@@ -17,6 +17,9 @@ COPY . .
 ARG VITE_API_URL=http://localhost:8000/api
 ENV VITE_API_URL=$VITE_API_URL
 
+# Fix permissions for node_modules binaries
+RUN chmod -R +x node_modules/.bin || true
+
 # Build the application
 RUN npm run build
 

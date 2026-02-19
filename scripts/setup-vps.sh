@@ -74,7 +74,7 @@ DOMAIN_NAME=yourdomain.com
 
 # Docker Registry
 DOCKER_REGISTRY=ghcr.io
-DOCKER_USERNAME=your-github-username
+DOCKER_USERNAME=msayem7
 IMAGE_TAG=latest
 
 # Django Settings

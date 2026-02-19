@@ -27,38 +27,50 @@ fi
 # Update domain in .env
 sed -i "s/DOMAIN_NAME=.*/DOMAIN_NAME=$DOMAIN/" .env
 
-# Start services without SSL first (for Let's Encrypt challenge)
-echo "Starting services for SSL challenge..."
-docker-compose -f docker-compose.prod.yml up -d nginx
+# Check if certificate already exists
+if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+    echo "SSL certificate already exists for $DOMAIN"
+    echo "Generating nginx configuration and restarting services..."
+    
+    # Generate SSL configuration from template
+    envsubst '${DOMAIN_NAME}' < /opt/powerdealer/nginx/conf.d/default.conf.template > /opt/powerdealer/nginx/conf.d/default.conf
+    
+    # Restart all containers
+    docker-compose -f docker-compose.prod.yml restart nginx
+    
+    echo ""
+    echo "=== SSL Setup Complete ==="
+    echo "Your site is accessible at: https://$DOMAIN"
+    exit 0
+fi
 
-# Wait for nginx to start
-sleep 5
+# Step 1: Stop nginx to free port 80 for certbot standalone
+echo "Stopping nginx container to free port 80..."
+docker-compose -f docker-compose.prod.yml stop nginx
 
-# Obtain certificate
-echo "Obtaining SSL certificate..."
-docker-compose -f docker-compose.prod.yml run --rm certbot certonly \
-    --webroot \
-    --webroot-path=/var/www/certbot \
+# Step 2: Obtain certificate using certbot standalone mode
+echo "Obtaining SSL certificate using standalone mode..."
+docker-compose -f docker-compose.prod.yml run --rm --service-ports certbot certonly \
+    --standalone \
     --email $EMAIL \
     --agree-tos \
     --no-eff-email \
-    -d $DOMAIN \
-    -d www.$DOMAIN
+    -d $DOMAIN
 
-# Generate SSL configuration from template
+# Step 3: Generate SSL configuration from template
 echo "Generating SSL nginx configuration..."
 envsubst '${DOMAIN_NAME}' < /opt/powerdealer/nginx/conf.d/default.conf.template > /opt/powerdealer/nginx/conf.d/default.conf
 
-# Restart nginx with SSL configuration
-echo "Restarting nginx with SSL..."
-docker-compose -f docker-compose.prod.yml restart nginx
+# Step 4: Restart all containers
+echo "Restarting all containers with SSL configuration..."
+docker-compose -f docker-compose.prod.yml up -d
 
 echo ""
 echo "=== SSL Setup Complete ==="
 echo ""
 echo "Your site should now be accessible at:"
 echo "  https://$DOMAIN"
-echo "  https://www.$DOMAIN"
 echo ""
+echo "HTTP traffic will be automatically redirected to HTTPS."
 echo "SSL certificate will auto-renew via certbot container."
 echo ""

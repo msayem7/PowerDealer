@@ -58,4 +58,3 @@ backups/
 
 # SSL certificates (generated on VPS)
 certbot/
-nul

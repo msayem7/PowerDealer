@@ -9,7 +9,7 @@ try:
     client.connect(
         hostname='82.112.235.77',
         username='root',
-        password='s-A-yem+19#74',
+        password='password',
         timeout=30
     )
     

@@ -36,41 +36,86 @@ if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
     envsubst '${DOMAIN_NAME}' < /opt/powerdealer/nginx/conf.d/default.conf.template > /opt/powerdealer/nginx/conf.d/default.conf
     
     # Restart all containers
-    docker-compose -f docker-compose.prod.yml restart nginx
+    docker-compose -f docker-compose.prod.yml down
+    docker-compose -f docker-compose.prod.yml up -d
     
     echo ""
     echo "=== SSL Setup Complete ==="
-    echo "Your site is accessible at: https://$DOMAIN"
+    echo "Your site is now accessible at: https://$DOMAIN"
     exit 0
 fi
 
-# Step 1: Stop nginx to free port 80 for certbot standalone
-echo "Stopping nginx container to free port 80..."
-docker-compose -f docker-compose.prod.yml stop nginx
+echo "No existing certificate found. Obtaining new certificate..."
 
-# Step 2: Obtain certificate using certbot standalone mode
-echo "Obtaining SSL certificate using standalone mode..."
-docker-compose -f docker-compose.prod.yml run --rm --service-ports certbot certonly \
+# Stop all containers to free port 80
+echo "Stopping containers to free port 80..."
+docker-compose -f docker-compose.prod.yml down
+
+# Wait for port 80 to be released
+sleep 3
+
+# Verify port 80 is free
+if netstat -tuln 2>/dev/null | grep -q ':80 ' || ss -tuln 2>/dev/null | grep -q ':80 '; then
+    echo "Warning: Port 80 appears to be in use. Attempting to proceed anyway..."
+fi
+
+# Obtain certificate using certbot standalone mode
+# This runs certbot directly on the host, binding to port 80
+echo "Obtaining SSL certificate via standalone mode..."
+echo "This may take a moment..."
+
+docker run --rm \
+    -p 80:80 \
+    -v certbot_conf:/etc/letsencrypt \
+    -v certbot_www:/var/www/certbot \
+    certbot/certbot:latest \
+    certonly \
     --standalone \
     --email $EMAIL \
     --agree-tos \
     --no-eff-email \
     -d $DOMAIN
 
-# Step 3: Generate SSL configuration from template
+# Verify certificate was obtained
+if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+    echo ""
+    echo "Error: Certificate acquisition failed!"
+    echo "Please check:"
+    echo "  1. Domain $DOMAIN points to this server's IP"
+    echo "  2. Port 80 is accessible from the internet"
+    echo "  3. Firewall allows incoming HTTP traffic"
+    exit 1
+fi
+
+echo "Certificate obtained successfully!"
+
+# Generate SSL configuration from template
 echo "Generating SSL nginx configuration..."
 envsubst '${DOMAIN_NAME}' < /opt/powerdealer/nginx/conf.d/default.conf.template > /opt/powerdealer/nginx/conf.d/default.conf
 
-# Step 4: Restart all containers
-echo "Restarting all containers with SSL configuration..."
+# Start all containers with SSL configuration
+echo "Starting all containers with SSL..."
 docker-compose -f docker-compose.prod.yml up -d
+
+# Wait for services to start
+sleep 5
+
+# Verify nginx is running
+if ! docker-compose -f docker-compose.prod.yml ps nginx | grep -q "Up"; then
+    echo "Error: Nginx failed to start. Check logs with:"
+    echo "  docker-compose -f docker-compose.prod.yml logs nginx"
+    exit 1
+fi
 
 echo ""
 echo "=== SSL Setup Complete ==="
 echo ""
-echo "Your site should now be accessible at:"
+echo "Your site is now accessible at:"
 echo "  https://$DOMAIN"
 echo ""
 echo "HTTP traffic will be automatically redirected to HTTPS."
 echo "SSL certificate will auto-renew via certbot container."
+echo ""
+echo "To test SSL configuration, run:"
+echo "  curl -I https://$DOMAIN"
 echo ""

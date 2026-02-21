@@ -107,7 +107,9 @@ volumes:
   media_files:
   backend_logs:
   certbot_conf:
+    external: true      # <-- add this
   certbot_www:
+    external: true      # <-- add this
 
 networks:
   backend:

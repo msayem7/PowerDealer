@@ -5,6 +5,7 @@ import DashboardView from './views/DashboardView.vue'
 import CustomersView from './views/CustomersView.vue'
 import CustomerCreateView from './views/CustomerCreateView.vue'
 import CustomerEditView from './views/CustomerEditView.vue'
+import AppLayout from './components/layout/AppLayout.vue'
 import { useAuthStore } from './stores/auth'
 
 const routes = [
@@ -23,24 +24,51 @@ const routes = [
     meta: { title: 'Login' },
   },
   {
-    path: '/dashboard',
-    component: DashboardView,
-    meta: { title: 'Dashboard', requiresAuth: true },
-  },
-  {
-    path: '/customers',
-    component: CustomersView,
-    meta: { title: 'Customers', requiresAuth: true },
-  },
-  {
-    path: '/customers/create',
-    component: CustomerCreateView,
-    meta: { title: 'Add Customer', requiresAuth: true },
-  },
-  {
-    path: '/customers/:mprn/edit',
-    component: CustomerEditView,
-    meta: { title: 'Edit Customer', requiresAuth: true },
+    path: '/',
+    component: AppLayout,
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'dashboard',
+        component: DashboardView,
+        meta: { title: 'Dashboard' },
+      },
+      {
+        path: 'customers',
+        component: CustomersView,
+        meta: { title: 'Customers' },
+      },
+      {
+        path: 'customers/create',
+        component: CustomerCreateView,
+        meta: { title: 'Add Customer' },
+      },
+      {
+        path: 'customers/:mprn/edit',
+        component: CustomerEditView,
+        meta: { title: 'Edit Customer' },
+      },
+      {
+        path: 'transactions',
+        component: CustomersView,
+        meta: { title: 'Transactions' },
+      },
+      {
+        path: 'analytics',
+        component: DashboardView,
+        meta: { title: 'Analytics' },
+      },
+      {
+        path: 'settings',
+        component: DashboardView,
+        meta: { title: 'Settings' },
+      },
+      {
+        path: 'help',
+        component: DashboardView,
+        meta: { title: 'Help' },
+      },
+    ],
   },
 ]
 

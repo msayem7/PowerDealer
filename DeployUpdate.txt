@@ -1,0 +1,30 @@
+Deploy Latest Update to VPS Production Server
+Based on your project configuration, here are the steps to deploy:
+
+Step 1: SSH into your VPS
+ssh root@82.112.235.77
+cd /opt/powerdealer
+Step 2: Build & Deploy (Rebuilds images with latest code)
+docker-compose -f docker-compose.prod.yml up -d --build
+Step 3: Run Database Migrations
+docker-compose -f docker-compose.prod.yml exec backend python manage.py migrate
+Step 4: Collect Static Files
+docker-compose -f docker-compose.prod.yml exec backend python manage.py collectstatic --noinput
+Step 5: Verify Deployment
+# Check container status
+docker-compose -f docker-compose.prod.yml ps
+
+# View backend logs
+docker-compose -f docker-compose.prod.yml logs backend
+
+# Health check
+curl http://localhost/health
+⚠️ Important Pre-deployment Check
+Your docker-compose.prod.yml has SSL volumes marked as external: true. If deploying for the first time or if volumes don't exist, create them first:
+
+docker volume create powerdealer_certbot_conf
+docker volume create powerdealer_certbot_www
+Optional: Setup SSL (if not done)
+sudo bash /opt/powerdealer/scripts/init-ssl.sh yourdomain.com your@email.com
+Your domain is configured as: srv1165276.hstgr.cloud (from .env.example)
+

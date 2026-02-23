@@ -68,6 +68,12 @@
 
         <div v-else class="loading">No business found</div>
       </div>
+
+      <div class="customers-section">
+        <h2>Customer Management</h2>
+        <p>Manage your customers, add new ones, and update their details.</p>
+        <router-link to="/customers" class="manage-btn">Manage Customers</router-link>
+      </div>
     </div>
   </div>
 </template>
@@ -280,5 +286,36 @@ textarea {
   text-align: center;
   padding: 40px;
   color: #666;
+}
+
+.customers-section {
+  margin-top: 30px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.customers-section h2 {
+  margin-top: 0;
+  color: #333;
+}
+
+.customers-section p {
+  margin-bottom: 15px;
+  color: #666;
+}
+
+.manage-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.manage-btn:hover {
+  background-color: #0056b3;
 }
 </style>

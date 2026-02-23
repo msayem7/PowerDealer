@@ -7,8 +7,11 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.db import connection
 
-from .models import Business
-from .serializers import SignupSerializer, LoginSerializer, BusinessSerializer
+from .models import Business, Customer
+from .serializers import (
+    SignupSerializer, LoginSerializer, BusinessSerializer,
+    CustomerSerializer, CustomerCreateSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -216,4 +219,127 @@ class BusinessDetailView(APIView):
             'message': 'Please check your input.',
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CustomerListCreateView(APIView):
+    """List and create customers for the authenticated business owner."""
+
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return Response({
+                'success': False,
+                'message': 'Login required.',
+                'errors': {}
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            business = request.user.business
+        except Business.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'Business not found.',
+                'errors': {}
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        customers = Customer.objects.filter(business=business).select_related('user')
+        serializer = CustomerSerializer(customers, many=True)
+        return Response({
+            'success': True,
+            'message': 'Customers retrieved successfully.',
+            'data': serializer.data,
+        })
+
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return Response({
+                'success': False,
+                'message': 'Login required.',
+                'errors': {}
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            business = request.user.business
+        except Business.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'Business not found.',
+                'errors': {}
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CustomerCreateSerializer(data=request.data, context={'business': business})
+        if serializer.is_valid():
+            customer = serializer.save()
+            logger.info(f"Customer created: {customer.user.email} for business {business.name}")
+            return Response({
+                'success': True,
+                'message': 'Customer created successfully.',
+                'data': CustomerSerializer(customer).data,
+            }, status=status.HTTP_201_CREATED)
+
+        logger.warning(f"Customer creation failed: {serializer.errors}")
+        return Response({
+            'success': False,
+            'message': 'Please check your input.',
+            'errors': serializer.errors,
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CustomerDetailView(APIView):
+    """Retrieve and update a single customer by MPRN, scoped to business."""
+
+    def _get_customer(self, request, mprn):
+        """Helper to authenticate, scope to business, and fetch customer by MPRN."""
+        if not request.user.is_authenticated:
+            return None, Response({
+                'success': False,
+                'message': 'Login required.',
+                'errors': {}
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            business = request.user.business
+        except Business.DoesNotExist:
+            return None, Response({
+                'success': False,
+                'message': 'Business not found.',
+                'errors': {}
+            }, status=status.HTTP_404_NOT_FOUND)
+        try:
+            customer = Customer.objects.select_related('user').get(mprn=mprn, business=business)
+        except Customer.DoesNotExist:
+            return None, Response({
+                'success': False,
+                'message': 'Customer not found.',
+                'errors': {}
+            }, status=status.HTTP_404_NOT_FOUND)
+        return customer, None
+
+    def get(self, request, mprn):
+        customer, error_response = self._get_customer(request, mprn)
+        if error_response:
+            return error_response
+        return Response({
+            'success': True,
+            'message': 'Customer retrieved successfully.',
+            'data': CustomerSerializer(customer).data,
+        })
+
+    def put(self, request, mprn):
+        customer, error_response = self._get_customer(request, mprn)
+        if error_response:
+            return error_response
+        serializer = CustomerSerializer(customer, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            logger.info(f"Customer updated: {customer.user.email}")
+            return Response({
+                'success': True,
+                'message': 'Customer updated successfully.',
+                'data': serializer.data,
+            })
+        return Response({
+            'success': False,
+            'message': 'Please check your input.',
+            'errors': serializer.errors,
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, mprn):
+        return self.put(request, mprn)
 

@@ -2,6 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import SignupView from './views/SignupView.vue'
 import LoginView from './views/LoginView.vue'
 import DashboardView from './views/DashboardView.vue'
+import CustomersView from './views/CustomersView.vue'
+import CustomerCreateView from './views/CustomerCreateView.vue'
+import CustomerEditView from './views/CustomerEditView.vue'
 import { useAuthStore } from './stores/auth'
 
 const routes = [
@@ -23,6 +26,21 @@ const routes = [
     path: '/dashboard',
     component: DashboardView,
     meta: { title: 'Dashboard', requiresAuth: true },
+  },
+  {
+    path: '/customers',
+    component: CustomersView,
+    meta: { title: 'Customers', requiresAuth: true },
+  },
+  {
+    path: '/customers/create',
+    component: CustomerCreateView,
+    meta: { title: 'Add Customer', requiresAuth: true },
+  },
+  {
+    path: '/customers/:mprn/edit',
+    component: CustomerEditView,
+    meta: { title: 'Edit Customer', requiresAuth: true },
   },
 ]
 

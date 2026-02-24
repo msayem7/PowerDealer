@@ -332,8 +332,8 @@ onUnmounted(() => {
 .user-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px 6px 6px;
+  gap: 10px;
+  padding: 8px 12px 8px 8px;
   border: none;
   background: none;
   border-radius: var(--border-radius-md);
@@ -352,8 +352,8 @@ onUnmounted(() => {
 }
 
 .user-avatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background-color: var(--color-primary);
   color: white;
@@ -378,7 +378,7 @@ onUnmounted(() => {
 }
 
 .user-name {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 500;
 }
 
@@ -417,11 +417,11 @@ onUnmounted(() => {
 
 .user-full-name {
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
 }
 
 .user-email {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--color-text-secondary);
 }
 
@@ -439,7 +439,7 @@ onUnmounted(() => {
   border: none;
   background: none;
   color: var(--color-text-primary);
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   text-decoration: none;
   cursor: pointer;
   transition: background-color 0.15s;

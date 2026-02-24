@@ -66,6 +66,8 @@
               :aria-expanded="transactionsExpanded"
               :aria-haspopup="true"
               @click="toggleTransactions"
+              @mouseenter="handleMouseEnter"
+              @mouseleave="handleMouseLeave"
             >
               <span class="nav-icon">
                 <svg viewBox="0 0 24 24" fill="none">
@@ -89,18 +91,6 @@
               class="nav-sublist"
               role="menu"
             >
-              <li role="none">
-                <router-link 
-                  to="/transactions" 
-                  class="nav-subitem"
-                  :class="{ 'active': isActiveRoute('/transactions') }"
-                  role="menuitem"
-                  :aria-current="isActiveRoute('/transactions') ? 'page' : undefined"
-                  @click="handleNavClick"
-                >
-                  All Transactions
-                </router-link>
-              </li>
               <li role="none">
                 <router-link 
                   to="/customers" 
@@ -194,7 +184,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLayoutStore } from '../../stores/layout'
 
@@ -211,12 +201,34 @@ const toggleTransactions = () => {
   transactionsExpanded.value = !transactionsExpanded.value
 }
 
+const handleMouseEnter = () => {
+  // Auto-expand on hover for collapsed desktop mode
+  if (layoutStore.isSidebarCollapsed && window.innerWidth >= 768) {
+    transactionsExpanded.value = true
+  }
+}
+
+const handleMouseLeave = () => {
+  // Auto-collapse on mouse leave for collapsed desktop mode
+  if (layoutStore.isSidebarCollapsed && window.innerWidth >= 768) {
+    transactionsExpanded.value = false
+  }
+}
+
 const handleNavClick = () => {
   // Close mobile menu on navigation
   if (window.innerWidth < 768) {
     layoutStore.closeMobileMenu()
   }
 }
+
+onMounted(() => {
+  window.addEventListener('resize', () => {})
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', () => {})
+})
 </script>
 
 <style scoped>

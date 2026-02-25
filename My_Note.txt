@@ -9,3 +9,8 @@ python manage.py runserver
 cd powerdealer_f
 npm install
 npm run dev
+
+
+1. In Trading UI, While deleting a cell group, it deleted from 1st row instead of active cell group.
+2. Need restriction on 5 trade
+3. digits after decimal restriction. 

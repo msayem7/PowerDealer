@@ -1,0 +1,36 @@
+Business Requirements Document (BRD): Dynamic Monthly Trading Pivot & Entry System
+
+1. Project Overview
+
+Create a high-performance, grid-based trading interface for managing monthly trades for customers. The system must provide a "Pivot" view displaying multiple trades for a single month horizontally with calculated summary metrics at the end of each row. The application navigation must include a "Trading" operation under the "Transactions" menu, positioned after customer sub items.
+
+2. Functional Requirements
+
+2.1 Data Entry and Edit
+Users select a Customer and Year to begin. The grid displays 12 rows representing January through December. Each trade within a month receives an auto-generated Trade_No (1, 2, 3...) based on entry order for that specific month, customer, and year combination. All cells containing P/Therm, Percent, and Trade_Date must support direct inline editing within the grid. Each month row includes a "Quick Add" (+) button that dynamically adds a new trade block (set of columns) for that month.
+
+2.2 Calculations and Decision Support
+Real-time calculations must execute at the row level with zero latency. Total Booked (TB) equals the sum of all Percent values for trades within that month. The system enforces a hard constraint where TB must not exceed 100. When TB exceeds 100, the system blocks save operations and highlights the violating cell in red. Average Price Achieved (AP) is calculated as the weighted average: the sum of (P/Therm_i multiplied by Percent_i) divided by the sum of all Percent_i values, where i represents each trade in that month.
+
+3. UI/UX Prototype Specification
+
+3.1 The Pivot Grid Layout
+The grid header uses a two-layer matrix structure. Layer 1 groups columns by Trade_No (Trade 1, Trade 2, Trade 3, etc.). Layer 2 provides sub-headers for P/Therm, Percent, and Trade_Date under each Trade_No group. The leftmost column contains month names as row headers. Each month row displays trade blocks horizontally followed by 2 fixed Summary columns showing Total % and Average Price Achieved . Empty trade slots display placeholder cells until filled.
+
+3.2 Component Behaviors
+Trade blocks within a month row automatically sort by Trade_Date in ascending order. A "Trash" icon appears on hover over each Trade_No header. Deleting a trade triggers automatic re-indexing of remaining Trade_No values for that month. The Total Booked cell displays visual validation states: green when TB equals 100, yellow when TB is between 0 and 100, and red with warning indicator when TB exceeds 100.
+
+4. Technical Specifications and Logic
+
+4.1 Data Schema
+Customer_ID: UUID or Integer, Foreign Key referencing customer table. Trade_No: Integer, auto-generated per customer per month per year. Month: Integer ranging from 1 to 12. Year: Integer in YYYY format. P_Therm: DECIMAL(10,4) representing price per thermal unit. Percent: DECIMAL(5,2) with valid range 0.00 to 100.00. Trade_Date: Standard DATE format.
+
+4.2 State Management and Add Logic
+When a user clicks "New Trade", the system identifies the target Month and Year, counts existing trade records (N) for that period, assigns Trade_No equal to N plus 1, opens empty input fields for P_Therm, Percent, and Trade_Date, and recalculates TB and AP variables on every keystroke using onChange event handlers.
+
+4.3 Navigation Structure
+The "Trading" operation must appear under the "Transactions" menu. It must be positioned after  Customers  sub item within that menu hierarchy.
+
+5. Acceptance Criteria
+
+The grid pivot UI must handle a minimum of 5 trades per month without layout breakage, with horizontal scroll enabled for overflow. Users cannot save any row where total percentage exceeds 100% - the save operation must be blocked programmatically. Data persists automatically on cell blur (focus leave) or via a dedicated "Save" button available for each row. The Average Price calculation must always use weighted averaging based on percentage allocation, never simple arithmetic averaging.

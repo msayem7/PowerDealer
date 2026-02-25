@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Business, Customer
+from .models import Business, Customer, Trade
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -178,3 +178,98 @@ class CustomerCreateSerializer(serializers.Serializer):
                 mprn=validated_data['mprn'],
             )
         return customer
+
+
+class CustomerNestedSerializer(serializers.ModelSerializer):
+    """Nested serializer for customer details (MPRN, name)"""
+    name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='user.email', read_only=True)
+
+    class Meta:
+        model = Customer
+        fields = ['id', 'mprn', 'name', 'email', 'mobile']
+
+    def get_name(self, obj):
+        return obj.user.get_full_name() or obj.user.username
+
+
+class TradeSerializer(serializers.ModelSerializer):
+    """Serializer for Trade model with nested customer details"""
+    customer = CustomerNestedSerializer(read_only=True)
+    customer_id = serializers.PrimaryKeyRelatedField(
+        queryset=Customer.objects.all(),
+        source='customer',
+        write_only=True,
+        required=False
+    )
+    # Allow using mprn instead of customer_id for creating trades
+    mprn = serializers.CharField(write_only=True, required=False)
+    month_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Trade
+        fields = [
+            'id', 'customer', 'customer_id', 'mprn', 'trade_no', 'month', 'month_name',
+            'year', 'p_therm', 'percent', 'trade_date', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['trade_no', 'created_at', 'updated_at']
+
+    def get_month_name(self, obj):
+        import calendar
+        return calendar.month_name[obj.month]
+
+    def validate(self, attrs):
+        # For partial updates, use instance values for missing fields
+        if self.instance:
+            # Get values from instance if not provided in attrs
+            if 'customer' not in attrs:
+                attrs['customer'] = self.instance.customer
+            if 'month' not in attrs:
+                attrs['month'] = self.instance.month
+            if 'year' not in attrs:
+                attrs['year'] = self.instance.year
+        
+        # If mprn is provided, look up the customer
+        mprn = attrs.pop('mprn', None)
+        if mprn and not attrs.get('customer'):
+            try:
+                customer = Customer.objects.get(mprn=mprn)
+                attrs['customer'] = customer
+            except Customer.DoesNotExist:
+                raise serializers.ValidationError({'mprn': 'Customer with this MPRN not found.'})
+        
+        # Validate that customer is provided (only for create, not partial update)
+        if not attrs.get('customer') and not self.instance:
+            raise serializers.ValidationError({'customer_id': 'Either customer_id or mprn is required.'})
+        
+        # Validate percent
+        customer = attrs.get('customer')
+        month = attrs.get('month')
+        year = attrs.get('year')
+        percent = attrs.get('percent', 0)
+
+        if customer and month and year:
+            # Get existing trades for this customer/month/year
+            queryset = Trade.objects.filter(
+                customer=customer,
+                month=month,
+                year=year
+            )
+
+            # Exclude current instance if updating
+            if self.instance:
+                queryset = queryset.exclude(pk=self.instance.pk)
+
+            total_percent = sum(t.percent for t in queryset)
+            new_total = total_percent + percent
+
+            if new_total > 100:
+                raise serializers.ValidationError({
+                    'percent': f"Total booked ({new_total}%) would exceed 100%. Current total: {total_percent}%"
+                })
+
+        return attrs
+
+    def create(self, validated_data):
+        """Create trade - trade_no is auto-generated in model's save method"""
+        return super().create(validated_data)

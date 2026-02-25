@@ -59,7 +59,7 @@
             <button 
               class="nav-item"
               :class="{ 
-                'active': isActiveRoute('/transactions') || isActiveRoute('/customers'),
+                'active': isActiveRoute('/transactions') || isActiveRoute('/customers') || isActiveRoute('/transactions/trading'),
                 'expanded': transactionsExpanded 
               }"
               role="menuitem"
@@ -101,6 +101,18 @@
                   @click="handleNavClick"
                 >
                   Customers
+                </router-link>
+              </li>
+              <li role="none">
+                <router-link 
+                  to="/transactions/trading" 
+                  class="nav-subitem"
+                  :class="{ 'active': isActiveRoute('/transactions/trading') }"
+                  role="menuitem"
+                  :aria-current="isActiveRoute('/transactions/trading') ? 'page' : undefined"
+                  @click="handleNavClick"
+                >
+                  Trading
                 </router-link>
               </li>
             </ul>

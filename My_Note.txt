@@ -13,4 +13,6 @@ npm run dev
 
 1. In Trading UI, While deleting a cell group, it deleted from 1st row instead of active cell group.
 2. Need restriction on 5 trade
-3. digits after decimal restriction. 
+3. Remove increment or decrement button beside numeric value's cells. 
+4. digits after decimal will be 2 for numeric values in trading ui.
+5  Column size will not be decrease if number of trade increase. Instesd use scroll bar if needed.

@@ -64,6 +64,7 @@
               v-for="n in totalTradeCells" 
               :key="'sub-' + n" 
               class="header-cell sub-header"
+              :class="{ 'date-header': (n - 1) % 3 === 2 }"
             >
               {{ getSubHeaderLabel(n) }}
             </th>
@@ -99,7 +100,7 @@
               <td v-if="getTrade(month.num, tradeNo)" :key="'ptherm-' + month.num + '-' + tradeNo" class="data-cell trade-cell">
                 <input 
                   type="number" 
-                  :value="getTrade(month.num, tradeNo).p_therm"
+                  :value="formatPTherm(getTrade(month.num, tradeNo).p_therm)"
                   @input="updateTradeField(month.num, tradeNo, 'p_therm', $event.target.value)"
                   @change="saveTrade(getTrade(month.num, tradeNo).id, month.num, tradeNo)"
                   class="input-field"
@@ -113,19 +114,19 @@
               <td v-if="getTrade(month.num, tradeNo)" :key="'percent-' + month.num + '-' + tradeNo" class="data-cell trade-cell" :class="{ 'error-cell': getTrade(month.num, tradeNo).percent > 100 }">
                 <input 
                   type="number" 
-                  :value="getTrade(month.num, tradeNo).percent"
+                  :value="formatPercentInput(getTrade(month.num, tradeNo).percent)"
                   @input="updateTradeField(month.num, tradeNo, 'percent', $event.target.value)"
                   @change="saveTrade(getTrade(month.num, tradeNo).id, month.num, tradeNo)"
                   class="input-field"
                   step="0.01"
                   min="0"
                   max="100"
-                  placeholder="0"
+                  placeholder="0.00"
                 />
               </td>
               <td v-else :key="'percent-empty-' + month.num + '-' + tradeNo" class="data-cell empty-cell"></td>
               
-              <td v-if="getTrade(month.num, tradeNo)" :key="'date-' + month.num + '-' + tradeNo" class="data-cell trade-cell">
+              <td v-if="getTrade(month.num, tradeNo)" :key="'date-' + month.num + '-' + tradeNo" class="data-cell trade-cell date-cell">
                 <input 
                   type="date" 
                   :value="getTrade(month.num, tradeNo).trade_date"
@@ -181,6 +182,7 @@
               min="0" 
               required
               placeholder="0.0000"
+              class="no-spinner"
             />
           </div>
           <div class="form-group">
@@ -192,7 +194,8 @@
               min="0" 
               max="100" 
               required
-              placeholder="0"
+              placeholder="0.00"
+              class="no-spinner"
             />
           </div>
           <div class="form-group">
@@ -352,7 +355,25 @@ const formatPercent = (value) => {
 }
 
 const formatPrice = (value) => {
-  return value !== null && value !== undefined ? `£${parseFloat(value).toFixed(4)}` : '£0.0000'
+  return value !== null && value !== undefined ? `£${parseFloat(value).toFixed(2)}` : '£0.00'
+}
+
+// Format number to 2 decimal places for display in inputs
+const formatNumber = (value, decimals = 2) => {
+  if (value === null || value === undefined || value === '') return ''
+  const num = parseFloat(value)
+  if (isNaN(num)) return ''
+  return num.toFixed(decimals)
+}
+
+// Format P/Therm to 2 decimal places
+const formatPTherm = (value) => {
+  return formatNumber(value, 2)
+}
+
+// Format Percent to 2 decimal places
+const formatPercentInput = (value) => {
+  return formatNumber(value, 2)
 }
 
 const updateTradeField = (month, tradeNo, field, value) => {
@@ -504,8 +525,29 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
 
 .grid-container {
   overflow-x: auto;
+  overflow-y: auto;
+  max-width: 100%;
   border-radius: 8px;
   border: 1px solid var(--color-border, #e5e7eb);
+}
+
+.grid-container::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.grid-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.grid-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.grid-container::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
 }
 
 .grid-wrapper {
@@ -518,8 +560,9 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
 .pivot-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
-  min-width: 900px;
+  table-layout: auto;
+  min-width: 1200px;
+  max-width: none;
 }
 
 .pivot-table th,
@@ -567,8 +610,9 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
 }
 
 .month-header {
-  width: 120px;
-  min-width: 120px;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
   text-align: left;
   padding-left: 16px;
   background-color: #e5e7eb;
@@ -577,6 +621,7 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
 .trade-header {
   width: 180px;
   min-width: 180px;
+  max-width: 180px;
   position: relative;
 }
 
@@ -623,15 +668,23 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
 }
 
 .sub-header {
-  width: 60px;
-  min-width: 60px;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
   font-size: 0.75rem;
   font-weight: 500;
 }
 
+.date-header {
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+}
+
 .summary-header {
-  width: 100px;
-  min-width: 100px;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
   font-weight: 600;
   background-color: #dbeafe;
 }
@@ -651,8 +704,9 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
 }
 
 .month-cell {
-  width: 120px;
-  min-width: 120px;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
   text-align: left;
   padding-left: 16px;
   font-weight: 500;
@@ -694,10 +748,17 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
 }
 
 .trade-cell {
-  width: 60px;
-  min-width: 60px;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
   padding: 4px;
   text-align: center;
+}
+
+.date-cell {
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
 }
 
 .trade-cells-group {
@@ -715,6 +776,14 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
   border-radius: 4px;
   font-size: 0.875rem;
   text-align: center;
+  /* Remove spinner buttons for number inputs */
+  -moz-appearance: textfield;
+}
+
+.input-field::-webkit-outer-spin-button,
+.input-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .input-field:focus {
@@ -733,8 +802,9 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
 }
 
 .summary-cell {
-  width: 100px;
-  min-width: 100px;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
   text-align: center;
 }
 
@@ -852,6 +922,17 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Remove spinner buttons for number inputs in modal */
+.form-group input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.form-group input[type="number"]::-webkit-outer-spin-button,
+.form-group input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .form-error {

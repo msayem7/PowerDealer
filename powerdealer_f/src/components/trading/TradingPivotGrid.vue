@@ -619,9 +619,9 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
 }
 
 .trade-header {
-  width: 180px;
-  min-width: 180px;
-  max-width: 180px;
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
   position: relative;
 }
 
@@ -675,10 +675,11 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
   font-weight: 500;
 }
 
-.date-header {
-  width: 140px !important;
-  min-width: 140px !important;
-  max-width: 140px !important;
+.date-header,
+.date-cell {
+  width: 120px !important;
+  min-width: 120px !important;
+  max-width: 120px !important;
 }
 
 .summary-header {
@@ -755,11 +756,11 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
   text-align: center;
 }
 
-.date-cell {
+/* .date-cell {
   width: 140px !important;
   min-width: 140px !important;
   max-width: 140px !important;
-}
+} */
 
 .trade-cells-group {
   display: contents;
@@ -792,8 +793,11 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
+
 .date-input {
-  font-size: 0.75rem;
+  width: 100% !important; 
+  box-sizing: border-box;
+  font-size: 0.85rem;
   padding: 4px 6px;
 }
 

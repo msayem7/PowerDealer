@@ -39,19 +39,10 @@
               :class="{ 'hoverable': getTradesForTradeNo(tradeNo).length > 0 }"
               @mouseenter="hoveredTradeNo = tradeNo"
               @mouseleave="hoveredTradeNo = null"
+              
             >
               <div class="trade-header-inner">
                 <span>Trade {{ tradeNo }}</span>
-                <button 
-                  v-if="hoveredTradeNo === tradeNo && getTradesForTradeNo(tradeNo).length > 0"
-                  class="delete-trade-btn"
-                  @click="handleDeleteTrade(tradeNo)"
-                  title="Delete trade and re-index"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" class="trash-icon">
-                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
-                  </svg>
-                </button>
               </div>
             </th>
             <th class="header-cell summary-header" rowspan="2">Total %</th>
@@ -97,7 +88,12 @@
 
             <!-- Trade Cells -->
             <template v-for="tradeNo in tradeNumbers">
-              <td v-if="getTrade(month.num, tradeNo)" :key="'ptherm-' + month.num + '-' + tradeNo" class="data-cell trade-cell">
+              <td 
+                v-if="getTrade(month.num, tradeNo)" 
+                :key="'ptherm-' + month.num + '-' + tradeNo" 
+                class="data-cell trade-cell"
+                @contextmenu="showContextMenu($event, getTrade(month.num, tradeNo).id, month.num)"
+              >
                 <input 
                   type="number" 
                   :value="formatPTherm(getTrade(month.num, tradeNo).p_therm)"
@@ -151,6 +147,29 @@
           </tr>
         </tbody>
       </table>
+      
+      <div class="grid-info-footer">
+        <svg viewBox="0 0 24 24" fill="none" class="info-icon">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-4h-2V7h2v6z" fill="currentColor"/>
+        </svg>
+        <span><strong>Tip:</strong> To delete a trade, <strong>right-click</strong> on any value in the <strong>P/Therm</strong> column.</span>
+      </div>
+      
+    </div>
+
+    <!-- Context Menu -->
+    <div 
+      v-if="contextMenu.visible" 
+      class="context-menu"
+      :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
+      @click.stop
+    >
+      <div class="context-menu-item" @click="handleDeleteFromContextMenu">
+        <svg viewBox="0 0 24 24" fill="none" class="context-menu-icon">
+          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
+        </svg>
+        Delete Trade
+      </div>
     </div>
 
     <!-- Add Trade Modal -->
@@ -222,7 +241,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTradingStore } from '../../stores/trading'
 
 const props = defineProps({
@@ -251,6 +270,15 @@ const newTrade = ref({
   p_therm: '',
   percent: '',
   trade_date: ''
+})
+
+// Context menu state
+const contextMenu = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  tradeId: null,
+  month: null
 })
 
 // Months data
@@ -441,22 +469,45 @@ const submitNewTrade = async () => {
   }
 }
 
-const handleDeleteTrade = async (tradeNo) => {
-  // Get all trades with this trade_no across all months
-  const tradesToDelete = []
-  pivotData.value.months.forEach(month => {
-    const trade = month.trades?.find(t => t.trade_no === tradeNo)
-    if (trade) tradesToDelete.push(trade)
-  })
+const handleDeleteTrade = async (tradeId) => {
+  // Delete the trade using its unique id
+  if (!tradeId) return
 
-  if (tradesToDelete.length === 0) return
-
-  // Delete the first trade found (will trigger re-indexing)
   try {
-    await store.deleteTrade(tradesToDelete[0].id)
-    emit('trade-deleted', tradesToDelete[0].id)
+    await store.deleteTrade(tradeId)
+    emit('trade-deleted', tradeId)
   } catch (err) {
     console.error('Failed to delete trade:', err)
+  }
+}
+
+// Context menu handlers
+const showContextMenu = (event, tradeId, month) => {
+  event.preventDefault()
+  contextMenu.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    tradeId: tradeId,
+    month: month
+  }
+}
+
+const hideContextMenu = () => {
+  contextMenu.value.visible = false
+}
+
+const handleDeleteFromContextMenu = async () => {
+  if (contextMenu.value.tradeId) {
+    await handleDeleteTrade(contextMenu.value.tradeId)
+    hideContextMenu()
+  }
+}
+
+// Close context menu when clicking outside
+const handleGlobalClick = () => {
+  if (contextMenu.value.visible) {
+    hideContextMenu()
   }
 }
 
@@ -468,6 +519,15 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
     store.fetchPivotDataByMprn(newMprn, newYear)
   }
 }, { immediate: true })
+
+// Register global click handler to close context menu
+onMounted(() => {
+  document.addEventListener('click', handleGlobalClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleGlobalClick)
+})
 </script>
 
 <style scoped>
@@ -989,4 +1049,62 @@ watch(() => [props.mprn, props.year], ([newMprn, newYear]) => {
   background-color: #93c5fd;
   cursor: not-allowed;
 }
+
+/* Context Menu Styles */
+.context-menu {
+  position: fixed;
+  z-index: 1000;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  min-width: 160px;
+  overflow: hidden;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  color: #dc2626;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.15s;
+}
+
+.context-menu-item:hover {
+  background-color: #fef2f2;
+}
+
+.context-menu-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.grid-info-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 16px;
+  background-color: #f0f7ff; /* Light blue background */
+  border-left: 4px solid #3b82f6; /* Blue accent border */
+  border-radius: 4px;
+  color: #1e40af; /* Dark blue text */
+  font-size: 0.875rem;
+}
+
+.info-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: #3b82f6;
+}
+
+.grid-info-footer strong {
+  font-weight: 600;
+}
+
 </style>

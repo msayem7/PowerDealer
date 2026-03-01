@@ -1,8 +1,8 @@
 <template>
   <div class="trading-view">
     <header class="view-header">
-      <h1 class="view-title">Trading</h1>
-      <p class="view-subtitle">Manage your monthly trading pivot and entries</p>
+      <h1 class="view-title">Trading Management</h1>
+      <p class="view-subtitle">Manage your monthly trading  entries</p>
     </header>
     
     <!-- Filters -->
@@ -119,10 +119,8 @@ const availableYears = computed(() => {
 // Methods
 const getCustomerName = (customer) => {
   if (customer.user) {
-    const firstName = customer.user.first_name || ''
-    const lastName = customer.user.last_name || ''
-    const fullName = `${firstName} ${lastName}`.trim()
-    if (fullName) return fullName
+    const name = customer.user.first_name || ''  // Full name stored in first_name
+    return name || customer.user.username
   }
   return customer.user?.username || 'Unknown'
 }

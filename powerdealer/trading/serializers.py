@@ -23,9 +23,6 @@ class SignupSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=6)
     business_name = serializers.CharField(max_length=255)
-    business_email = serializers.EmailField()
-    business_phone = serializers.CharField(max_length=20, required=False)
-    description = serializers.CharField(required=False, allow_blank=True)
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
@@ -45,13 +42,13 @@ class SignupSerializer(serializers.Serializer):
             password=validated_data['password']
         )
 
-        # Create business
+        # Create business with default values for removed fields
         business = Business.objects.create(
             owner=user,
             name=validated_data['business_name'],
-            email=validated_data['business_email'],
-            phone=validated_data.get('business_phone', ''),
-            description=validated_data.get('description', '')
+            email=validated_data['email'],  # Use user's email as business email
+            phone='',  # Removed from signup
+            description=''  # Removed from signup
         )
 
         return {'user': user, 'business': business}
@@ -65,15 +62,14 @@ class LoginSerializer(serializers.Serializer):
 class CustomerSerializer(serializers.ModelSerializer):
     """Serializer for Customer read/update operations. id is never exposed."""
     user = UserSerializer(read_only=True)
-    first_name = serializers.CharField(write_only=True, required=False)
-    last_name = serializers.CharField(write_only=True, required=False)
+    name = serializers.CharField(write_only=True, required=False)
     email = serializers.EmailField(write_only=True, required=False)
 
     class Meta:
         model = Customer
         fields = [
             'user', 'mobile', 'address', 'mprn', 'is_active',
-            'first_name', 'last_name', 'email', 'created_at', 'updated_at',
+            'name', 'email', 'created_at', 'updated_at',
         ]
         read_only_fields = ['business', 'created_at', 'updated_at']
 
@@ -90,6 +86,9 @@ class CustomerSerializer(serializers.ModelSerializer):
         return value
 
     def validate_mobile(self, value):
+        # Skip validation if mobile is empty (now optional)
+        if not value:
+            return value
         business = self.instance.business if self.instance else self.context.get('business')
         if business:
             qs = Customer.objects.filter(business=business, mobile=value)
@@ -110,16 +109,13 @@ class CustomerSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         # Extract user fields
-        first_name = validated_data.pop('first_name', None)
-        last_name = validated_data.pop('last_name', None)
+        name = validated_data.pop('name', None)
         email = validated_data.pop('email', None)
 
         # Update User fields
         user = instance.user
-        if first_name is not None:
-            user.first_name = first_name
-        if last_name is not None:
-            user.last_name = last_name
+        if name is not None:
+            user.first_name = name  # Store full name in first_name
         if email is not None:
             user.email = email
         user.save()
@@ -130,11 +126,10 @@ class CustomerSerializer(serializers.ModelSerializer):
 
 class CustomerCreateSerializer(serializers.Serializer):
     """Serializer for creating a new Customer + User atomically."""
-    first_name = serializers.CharField(max_length=150)
-    last_name = serializers.CharField(max_length=150)
+    name = serializers.CharField(max_length=150)
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=6)
-    mobile = serializers.CharField(max_length=20)
+    mobile = serializers.CharField(max_length=20, required=False, allow_blank=True)
     address = serializers.CharField(required=False, allow_blank=True)
     mprn = serializers.CharField(max_length=10)
 
@@ -144,6 +139,8 @@ class CustomerCreateSerializer(serializers.Serializer):
         return value
 
     def validate_mobile(self, value):
+        if not value:  # Skip validation if mobile is empty
+            return value
         business = self.context.get('business')
         if business and Customer.objects.filter(business=business, mobile=value).exists():
             raise serializers.ValidationError("This mobile number is already registered in your business.")
@@ -167,13 +164,13 @@ class CustomerCreateSerializer(serializers.Serializer):
                 username=validated_data['email'],
                 email=validated_data['email'],
                 password=validated_data['password'],
-                first_name=validated_data['first_name'],
-                last_name=validated_data['last_name'],
+                first_name=validated_data['name'],  # Store full name in first_name
+                last_name='',
             )
             customer = Customer.objects.create(
                 user=user,
                 business=business,
-                mobile=validated_data['mobile'],
+                mobile=validated_data.get('mobile', ''),
                 address=validated_data.get('address', ''),
                 mprn=validated_data['mprn'],
             )
@@ -190,7 +187,9 @@ class CustomerNestedSerializer(serializers.ModelSerializer):
         fields = ['id', 'mprn', 'name', 'email', 'mobile']
 
     def get_name(self, obj):
-        return obj.user.get_full_name() or obj.user.username
+        # Get full name from user - first_name now contains the full customer name
+        full_name = obj.user.get_full_name()
+        return full_name if full_name else obj.user.username
 
 
 class TradeSerializer(serializers.ModelSerializer):
@@ -229,14 +228,22 @@ class TradeSerializer(serializers.ModelSerializer):
             if 'year' not in attrs:
                 attrs['year'] = self.instance.year
         
-        # If mprn is provided, look up the customer
+        # If mprn is provided, look up the customer within the user's business
         mprn = attrs.pop('mprn', None)
         if mprn and not attrs.get('customer'):
-            try:
-                customer = Customer.objects.get(mprn=mprn)
-                attrs['customer'] = customer
-            except Customer.DoesNotExist:
-                raise serializers.ValidationError({'mprn': 'Customer with this MPRN not found.'})
+            # Get the business from the request user
+            request = self.context.get('request')
+            if request and request.user.is_authenticated:
+                try:
+                    business = request.user.business
+                    customer = Customer.objects.get(mprn=mprn, business=business)
+                    attrs['customer'] = customer
+                except Customer.DoesNotExist:
+                    raise serializers.ValidationError({'mprn': 'Customer with this MPRN not found in your business.'})
+                except Customer.MultipleObjectsReturned:
+                    raise serializers.ValidationError({'mprn': 'Multiple customers found with this MPRN. Please contact support.'})
+            else:
+                raise serializers.ValidationError({'mprn': 'Authentication required to look up customer by MPRN.'})
         
         # Validate that customer is provided (only for create, not partial update)
         if not attrs.get('customer') and not self.instance:

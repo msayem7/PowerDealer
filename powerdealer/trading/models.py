@@ -26,8 +26,8 @@ class Customer(models.Model):
     """Customer profile extending User, scoped to a Business"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer')
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='customers')
-    mobile = models.CharField(max_length=20)
-    address = models.TextField(blank=True)
+    mobile = models.CharField(max_length=20, blank=True, default='')
+    address = models.TextField(blank=True, default='')
     mprn = models.CharField(
         max_length=10,
         verbose_name='MPRN',
@@ -47,6 +47,7 @@ class Customer(models.Model):
             models.UniqueConstraint(
                 fields=['business', 'mobile'],
                 name='unique_mobile_per_business',
+                condition=~models.Q(mobile=''),  # Only enforce if mobile is not empty
             ),
         ]
 

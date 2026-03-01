@@ -22,21 +22,6 @@
         <input v-model="form.business_name" type="text" id="business_name" required />
       </div>
 
-      <div class="form-group">
-        <label for="business_email">Business Email:</label>
-        <input v-model="form.business_email" type="email" id="business_email" required />
-      </div>
-
-      <div class="form-group">
-        <label for="business_phone">Business Phone:</label>
-        <input v-model="form.business_phone" type="text" id="business_phone" />
-      </div>
-
-      <div class="form-group">
-        <label for="description">Description:</label>
-        <textarea v-model="form.description" id="description"></textarea>
-      </div>
-
       <div v-if="error" class="error">{{ error }}</div>
 
       <button type="submit" :disabled="loading">
@@ -61,9 +46,6 @@ const form = ref({
   email: '',
   password: '',
   business_name: '',
-  business_email: '',
-  business_phone: '',
-  description: '',
 })
 
 const loading = ref(false)
@@ -106,8 +88,7 @@ label {
   font-weight: bold;
 }
 
-input,
-textarea {
+input {
   width: 100%;
   padding: 8px;
   border: 1px solid #ccc;

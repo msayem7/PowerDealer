@@ -14,25 +14,14 @@
       <div class="form-section">
         <h3>Personal Information</h3>
         <div class="form-group">
-          <label for="first_name">First Name *</label>
+          <label for="name">Customer Name *</label>
           <input
-            v-model="form.first_name"
+            v-model="form.name"
             type="text"
-            id="first_name"
+            id="name"
             required
           />
-          <span v-if="errors.first_name" class="field-error">{{ errors.first_name }}</span>
-        </div>
-
-        <div class="form-group">
-          <label for="last_name">Last Name *</label>
-          <input
-            v-model="form.last_name"
-            type="text"
-            id="last_name"
-            required
-          />
-          <span v-if="errors.last_name" class="field-error">{{ errors.last_name }}</span>
+          <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
         </div>
 
         <div class="form-group">
@@ -50,17 +39,6 @@
       <div class="form-section">
         <h3>Customer Details</h3>
         <div class="form-group">
-          <label for="mobile">Mobile *</label>
-          <input
-            v-model="form.mobile"
-            type="text"
-            id="mobile"
-            required
-          />
-          <span v-if="errors.mobile" class="field-error">{{ errors.mobile }}</span>
-        </div>
-
-        <div class="form-group">
           <label for="mprn">MPRN * (10 digits)</label>
           <input
             v-model="form.mprn"
@@ -74,11 +52,21 @@
         </div>
 
         <div class="form-group">
+          <label for="mobile">Mobile</label>
+          <input
+            v-model="form.mobile"
+            type="text"
+            id="mobile"
+          />
+          <span v-if="errors.mobile" class="field-error">{{ errors.mobile }}</span>
+        </div>
+
+        <div class="form-group">
           <label for="address">Address</label>
           <textarea
             v-model="form.address"
             id="address"
-            rows="3"
+            rows="2"
           ></textarea>
           <span v-if="errors.address" class="field-error">{{ errors.address }}</span>
         </div>
@@ -121,8 +109,7 @@ const customerStore = useCustomerStore()
 const mprn = route.params.mprn
 
 const form = reactive({
-  first_name: '',
-  last_name: '',
+  name: '',
   email: '',
   mobile: '',
   mprn: '',
@@ -160,8 +147,7 @@ onMounted(async () => {
     await customerStore.fetchCustomer(mprn)
     const customer = customerStore.customer
     if (customer && customer.user) {
-      form.first_name = customer.user.first_name || ''
-      form.last_name = customer.user.last_name || ''
+      form.name = customer.user.first_name || ''  // Using first_name to store full name
       form.email = customer.user.email || ''
       form.mobile = customer.mobile || ''
       form.mprn = customer.mprn || ''
@@ -211,11 +197,11 @@ header h1 {
 }
 
 .form-section {
-  margin-bottom: 30px;
+  margin-bottom: 25px;
 }
 
 .form-section h3 {
-  margin: 0 0 20px 0;
+  margin: 0 0 15px 0;
   color: #555;
   font-size: 16px;
   border-bottom: 1px solid #eee;
@@ -223,7 +209,7 @@ header h1 {
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 label {
@@ -231,16 +217,17 @@ label {
   margin-bottom: 5px;
   font-weight: 500;
   color: #333;
+  font-size: 13px;
 }
 
 input[type="text"],
 input[type="email"],
 textarea {
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 13px;
   font-family: inherit;
 }
 
@@ -277,13 +264,13 @@ input[type="checkbox"] {
 }
 
 .cancel-btn {
-  padding: 10px 20px;
+  padding: 8px 16px;
   background-color: #6c757d;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .cancel-btn:hover {
@@ -291,13 +278,13 @@ input[type="checkbox"] {
 }
 
 .submit-btn {
-  padding: 10px 20px;
+  padding: 8px 16px;
   background-color: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .submit-btn:hover {

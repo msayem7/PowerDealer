@@ -1,0 +1,7 @@
+Bug:
+1: after entered 100% If you try to add a new entry System shows ""Please check your input." 
+  a. This message is not understandable to user. It should be "Please check your input. You have already entered 100%." or "You have already entered 100%."
+  b. Then user cancel and select a fresh month to add a trade but that message is still showing. It should be removed after user successfully add a new trade.
+  c. this is common message for all validation. It should be specific to each case.
+
+2.

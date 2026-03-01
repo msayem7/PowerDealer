@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.db import connection
 
 from .models import Business, Customer, Trade
@@ -46,10 +46,14 @@ class SignupView(APIView):
             user = data['user']
             business = data['business']
             
+            # Add user to Administrator group
+            admin_group = Group.objects.get(name='Administrator')
+            user.groups.add(admin_group)
+            
             # Generate tokens
             refresh = RefreshToken.for_user(user)
             
-            logger.info(f"User signup successful: {user.username}")
+            logger.info(f"User signup successful: {user.username} - added to Administrator group")
             
             return Response({
                 'success': True,
@@ -60,6 +64,7 @@ class SignupView(APIView):
                         'username': user.username,
                         'email': user.email
                     },
+                    'user_type': 'administrator',
                     'business': BusinessSerializer(business).data,
                     'tokens': {
                         'access': str(refresh.access_token),
@@ -85,36 +90,93 @@ class LoginView(APIView):
             
             user = authenticate(username=username, password=password)
             if user:
-                try:
-                    business = user.business
-                except Business.DoesNotExist:
-                    logger.warning(f"Login failed - no business found: {username}")
+                # Check group membership
+                is_admin = user.groups.filter(name='Administrator').exists()
+                is_customer = user.groups.filter(name='Customer').exists()
+                
+                # Handle Administrator group (business owner)
+                if is_admin:
+                    try:
+                        business = user.business
+                    except Business.DoesNotExist:
+                        logger.warning(f"Login failed - no business found: {username}")
+                        return Response({
+                            'success': False,
+                            'message': 'Business not found for this administrator.',
+                            'errors': {}
+                        }, status=status.HTTP_404_NOT_FOUND)
+                    
+                    refresh = RefreshToken.for_user(user)
+                    
+                    logger.info(f"Administrator login successful: {username}")
+                    
+                    return Response({
+                        'success': True,
+                        'message': 'Login successful',
+                        'data': {
+                            'user': {
+                                'id': user.id,
+                                'username': user.username,
+                                'email': user.email
+                            },
+                            'user_type': 'administrator',
+                            'business': BusinessSerializer(business).data,
+                            'tokens': {
+                                'access': str(refresh.access_token),
+                                'refresh': str(refresh)
+                            }
+                        }
+                    }, status=status.HTTP_200_OK)
+                
+                # Handle Customer group
+                elif is_customer:
+                    try:
+                        customer = user.customer
+                        business = customer.business
+                    except Customer.DoesNotExist:
+                        logger.warning(f"Login failed - no customer profile: {username}")
+                        return Response({
+                            'success': False,
+                            'message': 'Customer profile not found.',
+                            'errors': {}
+                        }, status=status.HTTP_404_NOT_FOUND)
+                    
+                    refresh = RefreshToken.for_user(user)
+                    
+                    logger.info(f"Customer login successful: {username}")
+                    
+                    return Response({
+                        'success': True,
+                        'message': 'Login successful',
+                        'data': {
+                            'user': {
+                                'id': user.id,
+                                'username': user.username,
+                                'email': user.email
+                            },
+                            'user_type': 'customer',
+                            'business': BusinessSerializer(business).data,
+                            'customer': {
+                                'id': customer.id,
+                                'mprn': customer.mprn,
+                                'mobile': customer.mobile,
+                                'address': customer.address
+                            },
+                            'tokens': {
+                                'access': str(refresh.access_token),
+                                'refresh': str(refresh)
+                            }
+                        }
+                    }, status=status.HTTP_200_OK)
+                
+                # User has no assigned role
+                else:
+                    logger.warning(f"Login failed - no role assigned: {username}")
                     return Response({
                         'success': False,
-                        'message': 'Business not found for this user.',
+                        'message': 'User has no assigned role. Please contact administrator.',
                         'errors': {}
-                    }, status=status.HTTP_404_NOT_FOUND)
-                
-                refresh = RefreshToken.for_user(user)
-                
-                logger.info(f"User login successful: {username}")
-                
-                return Response({
-                    'success': True,
-                    'message': 'Login successful',
-                    'data': {
-                        'user': {
-                            'id': user.id,
-                            'username': user.username,
-                            'email': user.email
-                        },
-                        'business': BusinessSerializer(business).data,
-                        'tokens': {
-                            'access': str(refresh.access_token),
-                            'refresh': str(refresh)
-                        }
-                    }
-                }, status=status.HTTP_200_OK)
+                    }, status=status.HTTP_403_FORBIDDEN)
             
             logger.warning(f"Login failed - invalid credentials: {username}")
             return Response({
@@ -141,23 +203,56 @@ class MeView(APIView):
             }, status=status.HTTP_401_UNAUTHORIZED)
         
         user = request.user
-        try:
-            business = user.business
-            business_data = BusinessSerializer(business).data
-        except Business.DoesNotExist:
+        
+        # Check group membership to determine user_type
+        is_admin = user.groups.filter(name='Administrator').exists()
+        is_customer = user.groups.filter(name='Customer').exists()
+        
+        user_type = None
+        customer_data = None
+        
+        if is_admin:
+            user_type = 'administrator'
+            try:
+                business = user.business
+                business_data = BusinessSerializer(business).data
+            except Business.DoesNotExist:
+                business_data = None
+        elif is_customer:
+            user_type = 'customer'
+            try:
+                customer = user.customer
+                business = customer.business
+                business_data = BusinessSerializer(business).data
+                customer_data = {
+                    'id': customer.id,
+                    'mprn': customer.mprn,
+                    'mobile': customer.mobile,
+                    'address': customer.address
+                }
+            except Customer.DoesNotExist:
+                business_data = None
+        else:
+            # No role assigned
             business_data = None
+        
+        response_data = {
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email
+            },
+            'user_type': user_type,
+            'business': business_data
+        }
+        
+        if customer_data:
+            response_data['customer'] = customer_data
         
         return Response({
             'success': True,
             'message': 'User retrieved successfully.',
-            'data': {
-                'user': {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email
-                },
-                'business': business_data
-            }
+            'data': response_data
         })
 
 
@@ -267,7 +362,12 @@ class CustomerListCreateView(APIView):
         serializer = CustomerCreateSerializer(data=request.data, context={'business': business})
         if serializer.is_valid():
             customer = serializer.save()
-            logger.info(f"Customer created: {customer.user.email} for business {business.name}")
+            
+            # Add customer user to Customer group
+            customer_group = Group.objects.get(name='Customer')
+            customer.user.groups.add(customer_group)
+            
+            logger.info(f"Customer created: {customer.user.email} for business {business.name} - added to Customer group")
             return Response({
                 'success': True,
                 'message': 'Customer created successfully.',
@@ -403,7 +503,7 @@ class TradeListCreateView(APIView):
         if error_response:
             return error_response
 
-        serializer = TradeSerializer(data=request.data)
+        serializer = TradeSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             # Verify customer belongs to this business
             customer = serializer.validated_data.get('customer')
@@ -480,7 +580,7 @@ class TradeDetailView(APIView):
         if error_response:
             return error_response
 
-        serializer = TradeSerializer(trade, data=request.data)
+        serializer = TradeSerializer(trade, data=request.data, context={'request': request})
         if serializer.is_valid():
             trade = serializer.save()
             logger.info(f"Trade updated: {trade.id}")
@@ -501,7 +601,7 @@ class TradeDetailView(APIView):
         if error_response:
             return error_response
 
-        serializer = TradeSerializer(trade, data=request.data, partial=True)
+        serializer = TradeSerializer(trade, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
             trade = serializer.save()
             logger.info(f"Trade updated: {trade.id}")

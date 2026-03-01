@@ -93,7 +93,8 @@ const filteredCustomers = computed(() => {
 
 const getFullName = (user) => {
   if (!user) return ''
-  return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username
+  // Now using single 'name' field - stored in first_name
+  return user.first_name || user.username
 }
 
 const formatDate = (dateString) => {

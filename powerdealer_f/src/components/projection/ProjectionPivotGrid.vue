@@ -50,9 +50,9 @@
             <td class="data-cell editable-cell st-charge-cell">
               <input 
                 type="number" 
-                :value="formatStCharge(row.st_charge)"
-                @input="updateField(index, 'st_charge', $event.target.value)"
-                @blur="validateAndUpdate(index, 'st_charge', $event.target.value)"
+                :value="getLocalValue(index, 'st_charge')"
+                @input="updateLocalField(index, 'st_charge', $event.target.value)"
+                @change="commitField(index, 'st_charge', $event.target.value)"
                 class="input-field input-field-narrow"
                 step="0.01"
                 min="0"
@@ -64,9 +64,9 @@
             <td class="data-cell editable-cell">
               <input 
                 type="number" 
-                :value="formatConsumption(row.consumption)"
-                @input="updateField(index, 'consumption', $event.target.value)"
-                @blur="validateAndUpdate(index, 'consumption', $event.target.value)"
+                :value="getLocalValue(index, 'consumption')"
+                @input="updateLocalField(index, 'consumption', $event.target.value)"
+                @change="commitField(index, 'consumption', $event.target.value)"
                 class="input-field"
                 step="0.01"
                 min="0"
@@ -78,9 +78,9 @@
             <td class="data-cell editable-cell flex-rate-cell">
               <input 
                 type="number" 
-                :value="formatFlexRate(row.flex_rate)"
-                @input="updateField(index, 'flex_rate', $event.target.value)"
-                @blur="validateAndUpdate(index, 'flex_rate', $event.target.value)"
+                :value="getLocalValue(index, 'flex_rate')"
+                @input="updateLocalField(index, 'flex_rate', $event.target.value)"
+                @change="commitField(index, 'flex_rate', $event.target.value)"
                 class="input-field input-field-medium"
                 step="0.00000001"
                 min="0"
@@ -116,7 +116,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useProjectionStore } from '../../stores/projection'
 
 const props = defineProps({
@@ -134,6 +134,9 @@ const emit = defineEmits(['retry'])
 
 // Store
 const projectionStore = useProjectionStore()
+
+// Local editing state - stores temporary edits before committing to store
+const editingRow = ref({})
 
 // Computed
 const loading = computed(() => projectionStore.loading)
@@ -189,33 +192,47 @@ const formatCost = (value) => {
   return parseFloat(value).toFixed(2)
 }
 
-// Update field value (immediate update for display)
-const updateField = (index, field, value) => {
+// Get local value for input - returns local edit if exists, otherwise the store value
+const getLocalValue = (index, field) => {
+  const key = `${index}-${field}`
+  if (editingRow.value[key] !== undefined) {
+    return editingRow.value[key]
+  }
+  // Return formatted store value if no local edit
+  const row = projectionStore.projectionRows[index]
+  if (!row) return ''
+  const value = row[field]
+  if (field === 'st_charge') return formatStCharge(value)
+  if (field === 'consumption') return formatConsumption(value)
+  if (field === 'flex_rate') return formatFlexRate(value)
+  return value
+}
+
+// Update local editing state (called on @input)
+const updateLocalField = (index, field, value) => {
+  const key = `${index}-${field}`
+  editingRow.value[key] = value
+}
+
+// Commit field to store (called on @change - fires on Enter/blur)
+const commitField = (index, field, value) => {
   const numValue = parseFloat(value) || 0
   
   // Check for negative values
   if (numValue < 0) {
     console.warn(`[ProjectionPivotGrid] Negative value not allowed for ${field}`)
+    // Reset local edit to store value
+    const editKey = `${index}-${field}`
+    delete editingRow.value[editKey]
     return
   }
   
+  // Commit to store
   projectionStore.updateRowField(index, field, numValue)
-}
-
-// Validate and update on blur
-const validateAndUpdate = (index, field, value) => {
-  const numValue = parseFloat(value) || 0
   
-  // Ensure non-negative
-  if (numValue < 0) {
-    // Reset to previous valid value
-    const row = projectionStore.projectionRows[index]
-    projectionStore.updateRowField(index, field, row[field])
-    return
-  }
-  
-  // Apply proper decimal rounding
-  projectionStore.updateRowField(index, field, numValue)
+  // Clear local edit after commit
+  const editKey = `${index}-${field}`
+  delete editingRow.value[editKey]
 }
 </script>
 

@@ -59,7 +59,7 @@
             <button 
               class="nav-item"
               :class="{ 
-                'active': isActiveRoute('/transactions') || isActiveRoute('/customers') || isActiveRoute('/transactions/trading'),
+                'active': isActiveRoute('/transactions') || isActiveRoute('/customers') || isActiveRoute('/transactions/trading') || isActiveRoute('/transactions/projection'),
                 'expanded': transactionsExpanded 
               }"
               role="menuitem"
@@ -113,6 +113,18 @@
                   @click="handleNavClick"
                 >
                   Trading
+                </router-link>
+              </li>
+              <li role="none">
+                <router-link 
+                  to="/transactions/projection" 
+                  class="nav-subitem"
+                  :class="{ 'active': isActiveRoute('/transactions/projection') }"
+                  role="menuitem"
+                  :aria-current="isActiveRoute('/transactions/projection') ? 'page' : undefined"
+                  @click="handleNavClick"
+                >
+                  Cost Projection
                 </router-link>
               </li>
             </ul>

@@ -6,6 +6,7 @@ import CustomersView from './views/CustomersView.vue'
 import CustomerCreateView from './views/CustomerCreateView.vue'
 import CustomerEditView from './views/CustomerEditView.vue'
 import TradingView from './views/TradingView.vue'
+import ProjectionView from './views/ProjectionView.vue'
 import AppLayout from './components/layout/AppLayout.vue'
 import { useAuthStore } from './stores/auth'
 
@@ -58,6 +59,11 @@ const routes = [
         path: 'transactions/trading',
         component: TradingView,
         meta: { title: 'Trading', requiresAuth: true },
+      },
+      {
+        path: 'transactions/projection',
+        component: ProjectionView,
+        meta: { title: 'Cost Projection', requiresAuth: true },
       },
       {
         path: 'analytics',

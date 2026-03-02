@@ -4,4 +4,6 @@ Bug:
   b. Then user cancel and select a fresh month to add a trade but that message is still showing. It should be removed after user successfully add a new trade.
   c. this is common message for all validation. It should be specific to each case.
 
-2.
+2. Year Entry Screen is required. List of years should be populated from the database.
+3. In trading Screen, Summary sections location should be after month column.
+4. if trading done partially then projection will be showing wrong costing. Either it should be removed or it should be calculated based on partial trade.

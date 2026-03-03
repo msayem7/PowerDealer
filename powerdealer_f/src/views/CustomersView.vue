@@ -25,7 +25,7 @@
       <!-- Empty state -->
       <div v-if="!customerStore.customers.length" class="empty-state">
         <p>No customers found. Add your first customer to get started.</p>
-        <router-link to="/customers/create" class="add-btn">Add Customer</router-link>
+        <!-- <router-link to="/customers/create" class="add-btn">Add Customer</router-link> -->
       </div>
 
       <!-- Table -->

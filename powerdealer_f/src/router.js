@@ -7,6 +7,7 @@ import CustomerCreateView from './views/CustomerCreateView.vue'
 import CustomerEditView from './views/CustomerEditView.vue'
 import TradingView from './views/TradingView.vue'
 import ProjectionView from './views/ProjectionView.vue'
+import CustomerDashboardView from './views/CustomerDashboardView.vue'
 import AppLayout from './components/layout/AppLayout.vue'
 import { useAuthStore } from './stores/auth'
 
@@ -64,6 +65,11 @@ const routes = [
         path: 'transactions/projection',
         component: ProjectionView,
         meta: { title: 'Cost Projection', requiresAuth: true },
+      },
+      {
+        path: 'customer-dashboard',
+        component: CustomerDashboardView,
+        meta: { title: 'My Dashboard', requiresAuth: true },
       },
       {
         path: 'analytics',

@@ -67,6 +67,55 @@ export const projectionApi = {
    */
   deleteProjection(id) {
     return api.delete(`/projection/${id}/`)
+  },
+  
+  // ============= Customer Dashboard API =============
+  
+  /**
+   * Get all dashboard data for the logged-in customer
+   * @returns {Promise} - API response with customer info, trading years, projection years
+   */
+  getCustomerDashboardData() {
+    console.log('[API] getCustomerDashboardData called')
+    return api.get('/customer-dashboard-data/')
+  },
+  
+  /**
+   * Get trading pivot data for logged-in customer for a specific year
+   * @param {number} year - Year (optional, defaults to max available year)
+   * @returns {Promise} - API response with trading pivot data
+   */
+  getCustomerTradingData(year) {
+    console.log('[API] getCustomerTradingData called:', { year })
+    return api.get('/customer-trading-data/', {
+      params: year ? { year } : {}
+    })
+  },
+  
+  /**
+   * Get projection data for logged-in customer for a specific year
+   * @param {number} year - Year (optional, defaults to max available year)
+   * @returns {Promise} - API response with projection data
+   */
+  getCustomerProjectionData(year) {
+    console.log('[API] getCustomerProjectionData called:', { year })
+    return api.get('/customer-projection-data/', {
+      params: year ? { year } : {}
+    })
+  },
+  
+  /**
+   * Calculate cost with custom trade price values
+   * @param {number} year - Year
+   * @param {Object} tradePrices - Object with month as key and custom trade price as value
+   * @returns {Promise} - API response with calculated costs
+   */
+  calculateCost(year, tradePrices) {
+    console.log('[API] calculateCost called:', { year, tradePrices })
+    return api.post('/calculate-cost/', {
+      year,
+      trade_prices: tradePrices
+    })
   }
 }
 

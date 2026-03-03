@@ -54,6 +54,25 @@
             </router-link>
           </li>
           
+          <!-- Customer Dashboard (visible only for customers) -->
+          <li v-if="authStore.isCustomer" role="none">
+            <router-link 
+              to="/customer-dashboard" 
+              class="nav-item"
+              :class="{ 'active': isActiveRoute('/customer-dashboard') }"
+              role="menuitem"
+              :aria-current="isActiveRoute('/customer-dashboard') ? 'page' : undefined"
+              @click="handleNavClick"
+            >
+              <span class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+                </svg>
+              </span>
+              <span v-if="!layoutStore.isSidebarCollapsed" class="nav-label">My Dashboard</span>
+            </router-link>
+          </li>
+          
           <!-- Transactions (with sub-items) -->
           <li role="none" class="nav-item-group-container">
             <button 
@@ -211,9 +230,11 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLayoutStore } from '../../stores/layout'
+import { useAuthStore } from '../../stores/auth'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
+const authStore = useAuthStore()
 
 const transactionsExpanded = ref(true)
 

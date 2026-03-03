@@ -113,7 +113,12 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login')
   } else if ((to.path === '/login' || to.path === '/signup') && isAuthenticated) {
-    next('/dashboard')
+    // Redirect to appropriate dashboard based on user role
+    if (authStore.isCustomer) {
+      next('/customer-dashboard')
+    } else {
+      next('/dashboard')
+    }
   } else {
     next()
   }

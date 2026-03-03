@@ -69,11 +69,11 @@
         <div v-else class="loading">No business found</div>
       </div>
 
-      <div class="customers-section">
+      <!-- <div class="customers-section">
         <h2>Customer Management</h2>
         <p>Manage your customers, add new ones, and update their details.</p>
         <router-link to="/customers" class="manage-btn">Manage Customers</router-link>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>

@@ -44,7 +44,12 @@ const handleLogin = async () => {
   error.value = null
   try {
     await authStore.login(form.value.username, form.value.password)
-    router.push('/dashboard')
+    // Redirect based on user role
+    if (authStore.isCustomer) {
+      router.push('/customer-dashboard')
+    } else {
+      router.push('/dashboard')
+    }
   } catch (err) {
     error.value = err.response?.data?.error || 'Login failed'
   } finally {

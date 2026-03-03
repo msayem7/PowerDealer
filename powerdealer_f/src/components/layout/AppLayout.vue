@@ -3,14 +3,15 @@
     class="app-layout"
     :class="{ 
       'sidebar-collapsed': layoutStore.isSidebarCollapsed,
-      'mobile-menu-open': layoutStore.isMobileMenuOpen 
+      'mobile-menu-open': layoutStore.isMobileMenuOpen,
+      'no-sidebar': authStore.isCustomer
     }"
   >
     <!-- Global Header -->
     <AppHeader />
     
-    <!-- Collapsible Navigation Sidebar -->
-    <NavSidebar />
+    <!-- Collapsible Navigation Sidebar (hidden for customer users) -->
+    <NavSidebar v-if="!authStore.isCustomer" />
     
     <!-- Main Content Area -->
     <main class="main-content" role="main">
@@ -39,10 +40,12 @@
 <script setup>
 import { onMounted, onUnmounted } from 'vue'
 import { useLayoutStore } from '../../stores/layout'
+import { useAuthStore } from '../../stores/auth'
 import AppHeader from './AppHeader.vue'
 import NavSidebar from './NavSidebar.vue'
 
 const layoutStore = useLayoutStore()
+const authStore = useAuthStore()
 
 // Handle responsive sidebar on window resize
 const handleResize = () => {
@@ -134,6 +137,15 @@ body {
 /* Collapsed Sidebar State */
 .app-layout.sidebar-collapsed {
   grid-template-columns: var(--sidebar-width-collapsed) 1fr;
+}
+
+/* No Sidebar State (for customer users) */
+.app-layout.no-sidebar {
+  grid-template-columns: 0 1fr;
+}
+
+.app-layout.no-sidebar.sidebar-collapsed {
+  grid-template-columns: 0 1fr;
 }
 
 /* Main Content Area */

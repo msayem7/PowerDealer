@@ -1,7 +1,6 @@
 # Docker Compose for Local Development
 # Usage: docker-compose up -d
 
-version: '3.8'
 
 services:
   # PostgreSQL Database
